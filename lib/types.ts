@@ -26,6 +26,7 @@ export interface TraderSummary extends TraderMetricSet {
   losses: number;
   wallet: string;
   profileViews: number;
+  xLinked?: boolean;
 }
 
 export interface TrendingMarket {
@@ -34,7 +35,7 @@ export interface TrendingMarket {
   platform: PlatformCode;
   volumeLabel: string;
   momentum: string;
-  probability: number;
+  probability: number | null;
   traders: Array<{
     name: string;
     txs: string;

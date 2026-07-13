@@ -29,7 +29,9 @@ export function TrendingMarkets({
             <h3>{market.title}</h3>
             <div className="market-stats-row">
               <p className="muted">{market.volumeLabel}</p>
-              <p className={market.probability >= 50 ? "positive" : "negative"}>{market.probability}%</p>
+              <p className={market.probability == null ? "muted" : market.probability >= 50 ? "positive" : "negative"}>
+                {market.probability == null ? "—" : `${market.probability}%`}
+              </p>
             </div>
             {detailed ? (
               <div className="mini-table">

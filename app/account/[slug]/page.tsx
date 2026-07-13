@@ -29,7 +29,7 @@ export default async function TraderProfilePage({
 
       <section className="panel profile-header">
         <div className="profile-header-main">
-          <Image src={profile.avatarUrl} alt={profile.displayName} width={92} height={92} className="avatar avatar-lg" />
+          <Image src={profile.avatarUrl} alt={profile.displayName} width={92} height={92} className="avatar avatar-lg" unoptimized />
           <div>
             <h1>{profile.displayName}</h1>
             <PlatformBadges platforms={profile.platforms} />
