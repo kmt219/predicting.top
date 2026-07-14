@@ -78,6 +78,8 @@ export interface PositionMarket {
   marketValueUsd: number;
   smartMoneyShare: number;
   traders: PositionTrader[];
+  probability?: number;
+  endsIn?: string;
 }
 
 export interface TraderProfile extends TraderSummary {

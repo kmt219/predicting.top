@@ -1,11 +1,13 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { FilterBar, FilterChip, FilterDropdown, FilterGroup } from "@/components/filter-bar";
+import { FilterBar, FilterChip, FilterDropdown } from "@/components/filter-bar";
 import { PageHeader } from "@/components/page-header";
 import { SiteHeader } from "@/components/site-header";
 import { TrendWindow, TrendingMarket, PlatformCode } from "@/lib/types";
 import { formatCurrency } from "@/lib/utils";
+import { getTraderProfile } from "@/lib/mock-data";
 
 const windows: TrendWindow[] = ["1H", "6H", "24H", "3D", "1W"];
 const scoreOptions = [
@@ -19,29 +21,6 @@ const sharpeOptions = [
   { label: "1.5+", value: "1.5+" },
   { label: "2.0+", value: "2.0+" },
 ];
-const miscOptions = {
-  any: [{ label: "Any", value: "Any" }],
-  greaterThan95: [
-    { label: "Any", value: "Any" },
-    { label: ">95%", value: ">95%" },
-  ],
-  sports: [
-    { label: "Any", value: "Any" },
-    { label: "Sports", value: "Sports" },
-  ],
-  ended: [
-    { label: "Any", value: "Any" },
-    { label: "Ended", value: "Ended" },
-  ],
-  lessThan30d: [
-    { label: "Any", value: "Any" },
-    { label: "<30d", value: "<30d" },
-  ],
-  fivePlus: [
-    { label: "Any", value: "Any" },
-    { label: "5+", value: "5+" },
-  ],
-};
 
 const PLATFORM_META: Record<PlatformCode, { label: string; color: string; dot: string }> = {
   PM: { label: "Polymarket", color: "rgba(0,132,199,0.15)", dot: "#0084c7" },
@@ -117,8 +96,32 @@ export default function TrendingMarketsPage() {
 
     if (fivePlusTraders) result = result.filter((m) => m.traders.length >= 5);
 
+    if (scoreFloor !== "Any") {
+      const threshold = Number(scoreFloor.replace("+", ""));
+      if (!Number.isNaN(threshold)) {
+        result = result.filter((m) =>
+          m.traders.some((t) => {
+            const profile = getTraderProfile(t.name);
+            return profile?.smartScore != null && profile.smartScore >= threshold;
+          })
+        );
+      }
+    }
+
+    if (sharpeFloor !== "Any") {
+      const threshold = Number(sharpeFloor.replace("+", ""));
+      if (!Number.isNaN(threshold)) {
+        result = result.filter((m) =>
+          m.traders.some((t) => {
+            const profile = getTraderProfile(t.name);
+            return profile?.sharpe != null && profile.sharpe >= threshold;
+          })
+        );
+      }
+    }
+
     return result;
-  }, [markets, greaterThan95, sportsOnly, endedOnly, lessThan30d, fivePlusTraders]);
+  }, [markets, greaterThan95, sportsOnly, endedOnly, lessThan30d, fivePlusTraders, scoreFloor, sharpeFloor]);
 
   return (
     <main className="page-shell">
@@ -195,13 +198,19 @@ export default function TrendingMarketsPage() {
             const probColor = market.probability == null ? "var(--muted)" : market.probability >= 50 ? "var(--positive)" : "var(--negative)";
 
             return (
-              <a
+              <article
                 key={`${market.platform}-${market.slug || market.title}-${index}`}
-                href={market.url}
-                target="_blank"
-                rel="noreferrer"
+                role="button"
+                tabIndex={0}
                 className="market-card"
-                style={{ display: "flex", flexDirection: "column", gap: "14px", padding: "20px" }}
+                aria-label={`Open market: ${market.title}`}
+                onClick={() => window.open(market.url, "_blank", "noopener,noreferrer")}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    window.open(market.url, "_blank", "noopener,noreferrer");
+                  }
+                }}
+                style={{ display: "flex", flexDirection: "column", gap: "14px", padding: "20px", cursor: "pointer" }}
               >
                 {/* Header row */}
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -257,21 +266,34 @@ export default function TrendingMarketsPage() {
                   </div>
                   <div style={{ display: "flex", gap: 8 }}>
                     {market.traders.slice(0, 2).map((t) => (
-                      <div key={t.name} style={{
-                        flex: 1, background: "rgba(255,255,255,0.03)", borderRadius: 8,
-                        padding: "6px 10px", display: "flex", justifyContent: "space-between", alignItems: "center",
-                      }}>
+                      <Link
+                        key={t.name}
+                        href={`/account/${encodeURIComponent(t.name)}`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="market-trader-chip"
+                        style={{
+                          flex: 1,
+                          background: "rgba(255,255,255,0.03)",
+                          borderRadius: 8,
+                          padding: "6px 10px",
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          textDecoration: "none",
+                          color: "inherit"
+                        }}
+                      >
                         <span style={{ fontSize: "0.78rem", color: "var(--muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 80 }}>
                           {t.name}
                         </span>
                         <span style={{ fontSize: "0.78rem", color: "var(--positive)", fontWeight: 600 }}>
                           {formatCurrency(t.inflow, true)}
                         </span>
-                      </div>
+                      </Link>
                     ))}
                   </div>
                 </div>
-              </a>
+              </article>
             );
           })}
         </div>
