@@ -24,13 +24,20 @@ const platformIcons: Record<PlatformCode, React.ReactNode> = {
 export default function HomePage() {
   const [period, setPeriod] = useState<PeriodKey>("ALL");
   const [platform, setPlatform] = useState<"ALL" | PlatformCode>("ALL");
-  const [sort, setSort] = useState<LeaderboardSortKey>("smart_score");
+  const [sort, setSort] = useState<LeaderboardSortKey>("pnl"); // Set default sort to pnl to match production
   const [search, setSearch] = useState("");
   const [xLinkedOnly, setXLinkedOnly] = useState(false);
 
-  const [leaderboard, setLeaderboard] = useState(() => getLeaderboard({ period, platform, minPnl: 0, sort, search, xLinkedOnly }));
+  const [leaderboard, setLeaderboard] = useState<{ total: number; items: any[] }>(() => ({
+    total: 0,
+    items: []
+  }));
   const [page, setPage] = useState(1);
   const itemsPerPage = 8;
+
+  const [dailyProfit, setDailyProfit] = useState<number | null>(null);
+  const [tradersCount, setTradersCount] = useState(280);
+  const [updatedTime, setUpdatedTime] = useState("");
 
   const pageCount = Math.max(1, Math.ceil(leaderboard.total / itemsPerPage));
   const paginatedItems = useMemo(
@@ -38,7 +45,30 @@ export default function HomePage() {
     [leaderboard.items, page]
   );
 
+  // Toggle sorting logic (deselecting resets to default P&L sort)
+  const toggleSort = (value: LeaderboardSortKey) => {
+    if (sort === value) {
+      setSort("pnl");
+    } else {
+      setSort(value);
+    }
+  };
+
   useEffect(() => {
+    // Fetch live daily profit and trader count statistics
+    fetch("/api/v1/daily-profit")
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.dailyProfit !== undefined) {
+          setDailyProfit(data.dailyProfit);
+          setTradersCount(data.tradersCount);
+        }
+      })
+      .catch(err => console.error("Error loading daily profit stats:", err));
+  }, []);
+
+  useEffect(() => {
+    // Fetch filtered leaderboard
     setPage(1);
     fetch(`/api/v1/leaderboard?period=${period}&platform=${platform}&sort=${sort}&search=${encodeURIComponent(search)}&xLinkedOnly=${xLinkedOnly}`)
       .then(async (res) => {
@@ -52,6 +82,31 @@ export default function HomePage() {
       .catch((err) => console.error("Error loading leaderboard:", err));
   }, [period, platform, sort, search, xLinkedOnly]);
 
+  useEffect(() => {
+    // Format updated timestamp relative to browser's current local time
+    const now = new Date();
+    const formatted = now.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true
+    });
+    setUpdatedTime(`P&L updated ${formatted}`);
+  }, [period, platform, sort, search, xLinkedOnly]);
+
+  const formattedToday = useMemo(() => {
+    if (dailyProfit === null) return "Today: ...";
+    const formatted = new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(Math.abs(dailyProfit));
+    return dailyProfit >= 0 ? `Today: +${formatted}` : `Today: -${formatted}`;
+  }, [dailyProfit]);
+
+  const todayPnlClass = dailyProfit !== null && dailyProfit >= 0 ? "positive" : "negative";
 
   return (
     <main className="page-shell">
@@ -64,10 +119,15 @@ export default function HomePage() {
                 <p className="eyebrow hero-label">Prediction Leaderboard</p>
                 <h1 className="custom-title">Prediction Leaderboard</h1>
                 <p className="custom-subtitle">Track the top prediction traders in realtime with clean filters and score-first ranking.</p>
-                <span className="update-time">P&L updated Jul 13, 1:32 AM</span>
+                <span className="update-time">{updatedTime || "P&L updated recently"}</span>
               </div>
               <div className="custom-header-right">
-                <span className="today-pnl positive">Today: +$521,743</span>
+                <span 
+                  className="today-pnl"
+                  style={{ color: dailyProfit !== null && dailyProfit >= 0 ? "var(--green)" : "var(--red)" }}
+                >
+                  {formattedToday}
+                </span>
               </div>
             </div>
 
@@ -81,7 +141,7 @@ export default function HomePage() {
                 />
               </div>
               <span className="traders-count-text">
-                {(leaderboard.total === 6 && !search && !xLinkedOnly && platform === "ALL") ? 232 : leaderboard.total} of 280 traders
+                {leaderboard.total} of {tradersCount} traders
               </span>
             </div>
 
@@ -96,9 +156,9 @@ export default function HomePage() {
                 ))}
                 <FilterChip label="All" active={platform === "ALL"} onClick={() => setPlatform("ALL")} />
                 <FilterChip label="X linked" active={xLinkedOnly} onClick={() => setXLinkedOnly(!xLinkedOnly)} />
-                <FilterChip label="Smart Score" active={sort === "smart_score"} onClick={() => setSort("smart_score")} />
+                <FilterChip label="Smart Score" active={sort === "smart_score"} onClick={() => toggleSort("smart_score")} />
                 {sortKeys.map((item) => (
-                  <FilterChip key={item.value} label={item.label} active={sort === item.value} onClick={() => setSort(item.value)} />
+                  <FilterChip key={item.value} label={item.label} active={sort === item.value} onClick={() => toggleSort(item.value)} />
                 ))}
               </FilterGroup>
             </FilterBar>

@@ -1,4 +1,4 @@
-import { getTrendingMarkets } from "@/lib/mock-data";
+import { getLiveTrendingMarkets } from "@/lib/live-api";
 import { fetchPMXTMarkets } from "@/lib/pmxt";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -12,19 +12,30 @@ export async function GET(request: NextRequest) {
       const pmxtMarkets = await fetchPMXTMarkets(query);
       if (pmxtMarkets.length > 0) {
         return NextResponse.json({
+          asOf: new Date().toISOString(),
           window,
-          source: "live",
+          source: "live-pmxt",
           exchanges: ["polymarket", "kalshi", "opinion"],
           items: pmxtMarkets,
         });
       }
     } catch (err) {
       console.error("[PMXT] Error fetching markets:", err);
-      // Fall through to mock data
+      // Fall through to live aggregator
     }
   }
 
-  // Fall back to mock data
-  const mockData = getTrendingMarkets(window);
-  return NextResponse.json({ ...mockData, source: "mock" });
+  try {
+    // Fall back to live aggregator instead of static mock data
+    const liveData = await getLiveTrendingMarkets(window, query);
+    return NextResponse.json({
+      asOf: new Date().toISOString(),
+      window,
+      source: "live-aggregator",
+      items: liveData
+    });
+  } catch (error: any) {
+    console.error("[Trending Markets API Error]:", error.message);
+    return NextResponse.json({ error: "Failed to fetch live trending markets", details: error.message }, { status: 502 });
+  }
 }
