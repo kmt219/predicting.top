@@ -47,8 +47,14 @@ export default function RecentTradesPage() {
 
   const [trades, setTrades] = useState<{ items: RecentTrade[] }>(() => ({ items: [] }));
   const [isLoading, setIsLoading] = useState(true);
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isMounted) return;
     setIsLoading(true);
     fetch(`/api/v1/trades/recent?limit=100&minAmount=${minSize}`)
       .then(res => {
@@ -60,7 +66,7 @@ export default function RecentTradesPage() {
       })
       .catch(err => console.error("Error loading recent trades:", err))
       .finally(() => setIsLoading(false));
-  }, [minSize]);
+  }, [minSize, isMounted]);
 
   const handleScoreChipClick = () => {
     if (scoreFilterActive) {
@@ -105,6 +111,17 @@ export default function RecentTradesPage() {
         return true;
       });
   }, [minSize, scoreFloor, sharpeFloor, scoreFilterActive, sharpeFilterActive, greaterThan95, sportsOnly, trades.items]);
+
+  if (!isMounted) {
+    return (
+      <main className="page-shell">
+        <SiteHeader active="trades" />
+        <div style={{ textAlign: "center", padding: "80px 0", color: "var(--muted)" }}>
+          Loading...
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="page-shell">
