@@ -270,11 +270,12 @@ export async function getLivePositions(side: "ALL" | "YES" | "NO", platform: "AL
     console.error("Failed to fetch leaderboard cache for positions:", err);
   }
 
-  // Group flat position list by market name + side
+  // Group flat position list by market name ONLY
   const marketGroups: Record<string, {
     title: string;
     platform: PlatformCode;
-    side: "YES" | "NO";
+    endsIn: string;
+    priceLabel: string;
     traders: PositionTrader[];
   }> = {};
 
@@ -284,18 +285,23 @@ export async function getLivePositions(side: "ALL" | "YES" | "NO", platform: "AL
     const itemPlatform: PlatformCode = isPolymarket ? "PM" : "KS";
     const itemSide: "YES" | "NO" = pos.outcome.toUpperCase() === "YES" ? "YES" : "NO";
     
-    // Group key
-    const key = `${title}__${itemSide}`;
-
     // Apply platform and side filter at source level
     if (side !== "ALL" && itemSide !== side) return;
     if (platform !== "ALL" && itemPlatform !== platform) return;
 
+    // Group key is the market title
+    const key = title;
+
     if (!marketGroups[key]) {
+      // Estimate relative endsIn text
+      const endsIn = pos.ends_in || "5mo left";
+      const currentPrice = pos.current_price != null ? `${Math.round(pos.current_price * 100)}¢` : "50¢";
+
       marketGroups[key] = {
         title,
         platform: itemPlatform,
-        side: itemSide,
+        endsIn,
+        priceLabel: currentPrice,
         traders: []
       };
     }
@@ -314,7 +320,8 @@ export async function getLivePositions(side: "ALL" | "YES" | "NO", platform: "AL
       pnlUsd: pos.cash_pnl || 0,
       shares: Math.round(pos.size).toLocaleString(),
       valueUsd: pos.current_value || 0,
-      sharpe: metrics.sharpe
+      sharpe: metrics.sharpe,
+      side: itemSide
     });
   });
 
@@ -327,20 +334,31 @@ export async function getLivePositions(side: "ALL" | "YES" | "NO", platform: "AL
 
     const totalValue = group.traders.reduce((acc, t) => acc + t.valueUsd, 0);
 
+    // Calculate Yes/No volume split percentages
+    const yesValue = group.traders.filter(t => t.side === "YES").reduce((acc, t) => acc + t.valueUsd, 0);
+    const smartMoneyYes = totalValue > 0 ? Math.round((yesValue / totalValue) * 100) : 50;
+    const smartMoneyNo = 100 - smartMoneyYes;
+
+    // Count unique traders
+    const uniqueTraders = new Set(group.traders.map(t => t.traderName.toLowerCase())).size;
+
     return {
       slug: key.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
       title: group.title,
       platform: group.platform,
-      side: group.side,
+      side: "YES", // default fallback side
       marketValueUsd: totalValue,
-      smartMoneyShare: totalValue > 50000 ? 85 : 65, // Estimate smart money share ratio
+      smartMoneyShare: totalValue > 50000 ? 85 : 65, // legacy share ratio
       traders: group.traders,
-      endsIn: "Active"
+      endsIn: group.endsIn,
+      priceLabel: group.priceLabel,
+      smartMoneyYes,
+      smartMoneyNo,
+      tradersCount: uniqueTraders
     };
   });
 
-  // Sort markets by total market value descending
-  return markets.sort((a, b) => b.marketValueUsd - a.marketValueUsd);
+  return markets;
 }
 
 // Helper to format volume labels
