@@ -1,13 +1,11 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { FilterBar, FilterChip, FilterDropdown } from "@/components/filter-bar";
 import { PageHeader } from "@/components/page-header";
 import { SiteHeader } from "@/components/site-header";
-import { TrendWindow, TrendingMarket, PlatformCode } from "@/lib/types";
-import { formatCurrency } from "@/lib/utils";
+import { TrendWindow, TrendingMarket } from "@/lib/types";
 import { getTraderProfile } from "@/lib/mock-data";
+import { TrendingMarketCard, TrendingMarketsSkeleton } from "@/components/trending-markets";
 
 const windows: TrendWindow[] = ["1H", "6H", "24H", "3D", "1W"];
 const scoreOptions = [
@@ -22,11 +20,7 @@ const sharpeOptions = [
   { label: "2.0+", value: "2.0+" },
 ];
 
-const PLATFORM_META: Record<PlatformCode, { label: string; color: string; dot: string }> = {
-  PM: { label: "Polymarket", color: "rgba(0,132,199,0.15)", dot: "#0084c7" },
-  KS: { label: "Kalshi", color: "rgba(56,178,103,0.15)", dot: "#38b267" },
-  OL: { label: "Opinion Labs", color: "rgba(180,90,220,0.15)", dot: "#b45adc" },
-};
+
 
 export default function TrendingMarketsPage() {
   const [trendWindow, setTrendWindow] = useState<TrendWindow>("1W");
@@ -156,30 +150,149 @@ export default function TrendingMarketsPage() {
           </div>
         )}
 
-        <FilterBar className="one-row">
-          {windows.map((window) => (
-            <FilterChip
-              key={window}
-              label={window}
-              active={window === trendWindow}
-              onClick={() => setTrendWindow(window)}
-            />
+        {/* Filter Row matching screenshot */}
+        <div className="trending-filter-row" style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "10px",
+          background: "var(--panel-2)",
+          border: "1px solid var(--border)",
+          borderRadius: "4px",
+          padding: "8px 12px",
+          flexWrap: "wrap",
+          width: "100%",
+          marginTop: "12px",
+          marginBottom: "20px"
+        }}>
+          {/* Timeframe selector group */}
+          <div className="trending-pill-group" style={{
+            display: "inline-flex",
+            alignItems: "center",
+            background: "rgba(0, 0, 0, 0.15)",
+            border: "1px solid var(--border)",
+            borderRadius: "4px",
+            padding: "2px",
+            gap: "2px"
+          }}>
+            {windows.map((w) => (
+              <button
+                key={w}
+                onClick={() => setTrendWindow(w)}
+                type="button"
+                style={{
+                  background: w === trendWindow ? "var(--text)" : "transparent",
+                  color: w === trendWindow ? "var(--bg)" : "var(--muted)",
+                  border: "none",
+                  borderRadius: "3px",
+                  padding: "5px 10px",
+                  fontSize: "0.78rem",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  transition: "all 120ms ease"
+                }}
+              >
+                {w}
+              </button>
+            ))}
+          </div>
+
+          {/* Tag Buttons: >95%, Sports, Ended, <30d, 5+ */}
+          {[
+            { label: ">95%", active: greaterThan95, onClick: () => setGreaterThan95(!greaterThan95) },
+            { label: "Sports", active: sportsOnly, onClick: () => setSportsOnly(!sportsOnly) },
+            { label: "Ended", active: endedOnly, onClick: () => setEndedOnly(!endedOnly) },
+            { label: "<30d", active: lessThan30d, onClick: () => setLessThan30d(!lessThan30d) },
+            { label: "5+", active: fivePlusTraders, onClick: () => setFivePlusTraders(!fivePlusTraders) }
+          ].map((tag) => (
+            <button
+              key={tag.label}
+              type="button"
+              onClick={tag.onClick}
+              style={{
+                background: tag.active ? "var(--text)" : "transparent",
+                color: tag.active ? "var(--bg)" : "var(--text)",
+                border: tag.active ? "none" : "1px solid var(--border)",
+                borderRadius: "4px",
+                padding: "5px 10px",
+                fontSize: "0.78rem",
+                fontWeight: 700,
+                cursor: "pointer",
+                transition: "all 120ms ease"
+              }}
+            >
+              {tag.label}
+            </button>
           ))}
-          <FilterChip label=">95%" active={greaterThan95} onClick={() => setGreaterThan95((v) => !v)} />
-          <FilterChip label="Sports" active={sportsOnly} onClick={() => setSportsOnly((v) => !v)} />
-          <FilterChip label="Ended" active={endedOnly} onClick={() => setEndedOnly((v) => !v)} />
-          <FilterChip label="<30d" active={lessThan30d} onClick={() => setLessThan30d((v) => !v)} />
-          <FilterChip label="5+" active={fivePlusTraders} onClick={() => setFivePlusTraders((v) => !v)} />
-          <FilterDropdown label="Score" value={scoreFloor} options={scoreOptions} onChange={setScoreFloor} />
-          <FilterDropdown label="Sharpe" value={sharpeFloor} options={sharpeOptions} onChange={setSharpeFloor} />
-        </FilterBar>
+
+          <span className="trending-divider" style={{
+            width: "1px",
+            height: "18px",
+            background: "var(--border)",
+            margin: "0 4px"
+          }} />
+
+          {/* Score Dropdown */}
+          <div className="trending-select-wrapper" style={{ position: "relative" }}>
+            <select
+              className="trending-select"
+              value={scoreFloor}
+              onChange={(e) => setScoreFloor(e.target.value)}
+              style={{
+                appearance: "none",
+                background: "transparent",
+                border: "1px solid var(--border)",
+                borderRadius: "4px",
+                color: "var(--text)",
+                padding: "6px 24px 6px 12px",
+                fontSize: "0.78rem",
+                fontWeight: 700,
+                cursor: "pointer",
+                backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.6)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`,
+                backgroundRepeat: "no-repeat",
+                backgroundPosition: "right 8px center",
+                backgroundSize: "10px"
+              }}
+            >
+              <option value="Any" style={{ background: "var(--panel)", color: "var(--text)" }}>Score</option>
+              {scoreOptions.map((opt) => (
+                <option key={opt.value} value={opt.value} style={{ background: "var(--panel)", color: "var(--text)" }}>{opt.label}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Sharpe Dropdown */}
+          <div className="trending-select-wrapper" style={{ position: "relative" }}>
+            <select
+              className="trending-select"
+              value={sharpeFloor}
+              onChange={(e) => setSharpeFloor(e.target.value)}
+              style={{
+                appearance: "none",
+                background: "transparent",
+                border: "1px solid var(--border)",
+                borderRadius: "4px",
+                color: "var(--text)",
+                padding: "6px 24px 6px 12px",
+                fontSize: "0.78rem",
+                fontWeight: 700,
+                cursor: "pointer",
+                backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.6)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`,
+                backgroundRepeat: "no-repeat",
+                backgroundPosition: "right 8px center",
+                backgroundSize: "10px"
+              }}
+            >
+              <option value="Any" style={{ background: "var(--panel)", color: "var(--text)" }}>Sharpe</option>
+              {sharpeOptions.map((opt) => (
+                <option key={opt.value} value={opt.value} style={{ background: "var(--panel)", color: "var(--text)" }}>{opt.label}</option>
+              ))}
+            </select>
+          </div>
+        </div>
       </section>
 
       {isLoading ? (
-        <div style={{ textAlign: "center", padding: "80px 0", color: "var(--muted)" }}>
-          <div style={{ fontSize: "2rem", marginBottom: 16 }}>Loading</div>
-          <p style={{ margin: 0, fontSize: "0.95rem" }}>Fetching live markets from Polymarket, Kalshi & Opinion Labs…</p>
-        </div>
+        <TrendingMarketsSkeleton />
       ) : items.length === 0 ? (
         <div style={{ textAlign: "center", padding: "80px 0", color: "var(--muted)" }}>
           No markets match your filters.
@@ -187,115 +300,13 @@ export default function TrendingMarketsPage() {
       ) : (
         <div style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(360px, 1fr))",
+          gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))",
           gap: "20px",
           marginTop: "24px",
         }}>
-          {items.map((market, index) => {
-            const meta = PLATFORM_META[market.platform] ?? { label: market.platform, color: "rgba(255,255,255,0.05)", dot: "#888" };
-            // PMXT catalog doesn't return live prices so prob=50 means "unknown"
-            const probDisplay = market.probability == null ? "—" : `${market.probability}%`;
-            const probColor = market.probability == null ? "var(--muted)" : market.probability >= 50 ? "var(--positive)" : "var(--negative)";
-
-            return (
-              <article
-                key={`${market.platform}-${market.slug || market.title}-${index}`}
-                role="button"
-                tabIndex={0}
-                className="market-card"
-                aria-label={`Open market: ${market.title}`}
-                onClick={() => window.open(market.url, "_blank", "noopener,noreferrer")}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    window.open(market.url, "_blank", "noopener,noreferrer");
-                  }
-                }}
-                style={{ display: "flex", flexDirection: "column", gap: "14px", padding: "20px", cursor: "pointer" }}
-              >
-                {/* Header row */}
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    <span style={{
-                      display: "inline-flex", alignItems: "center", gap: "5px",
-                      background: meta.color, border: `1px solid ${meta.dot}33`,
-                      borderRadius: "20px", padding: "3px 10px",
-                      fontSize: "0.72rem", fontWeight: 700, color: meta.dot,
-                    }}>
-                      <span style={{ width: 5, height: 5, borderRadius: "50%", background: meta.dot, display: "inline-block" }} />
-                      {meta.label}
-                    </span>
-                  </div>
-                  <span style={{ fontSize: "0.78rem", color: "var(--muted)" }}>{market.endsIn}</span>
-                </div>
-
-                {/* Title */}
-                <h3 style={{
-                  margin: 0, fontSize: "1.05rem", fontWeight: 600, lineHeight: 1.45,
-                  color: "var(--text)",
-                  display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical",
-                  overflow: "hidden",
-                }}>
-                  {market.title}
-                </h3>
-
-                {/* Stats row */}
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginTop: "auto" }}>
-                  <div>
-                    <p style={{ margin: 0, fontSize: "0.78rem", color: "var(--muted)", marginBottom: 2 }}>24h Volume</p>
-                    <p style={{ margin: 0, fontSize: "0.95rem", fontWeight: 600, color: "var(--text)" }}>
-                      {market.volumeLabel}
-                    </p>
-                  </div>
-                  <div style={{ textAlign: "right" }}>
-                    <p style={{ margin: 0, fontSize: "0.78rem", color: "var(--muted)", marginBottom: 2 }}>Probability</p>
-                    <p style={{ margin: 0, fontSize: "1.7rem", fontWeight: 800, letterSpacing: "-0.03em", color: probColor }}>
-                      {probDisplay}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Inflow bar */}
-                <div style={{ borderTop: "1px solid var(--border)", paddingTop: "12px" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-                    <span style={{ fontSize: "0.75rem", color: "var(--muted)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                      Smart Inflow
-                    </span>
-                    <span style={{ fontSize: "0.75rem", color: "var(--positive)", fontWeight: 600 }}>
-                      {market.momentum}
-                    </span>
-                  </div>
-                  <div style={{ display: "flex", gap: 8 }}>
-                    {market.traders.slice(0, 2).map((t) => (
-                      <Link
-                        key={t.name}
-                        href={`/account/${encodeURIComponent(t.name)}`}
-                        onClick={(e) => e.stopPropagation()}
-                        className="market-trader-chip"
-                        style={{
-                          flex: 1,
-                          background: "rgba(255,255,255,0.03)",
-                          borderRadius: 8,
-                          padding: "6px 10px",
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "center",
-                          textDecoration: "none",
-                          color: "inherit"
-                        }}
-                      >
-                        <span style={{ fontSize: "0.78rem", color: "var(--muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 80 }}>
-                          {t.name}
-                        </span>
-                        <span style={{ fontSize: "0.78rem", color: "var(--positive)", fontWeight: 600 }}>
-                          {formatCurrency(t.inflow, true)}
-                        </span>
-                      </Link>
-                    ))}
-                  </div>
-                </div>
-              </article>
-            );
-          })}
+          {items.map((market, index) => (
+            <TrendingMarketCard key={`${market.platform}-${market.slug || market.title}-${index}`} market={market} />
+          ))}
         </div>
       )}
     </main>

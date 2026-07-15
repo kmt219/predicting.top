@@ -43,12 +43,11 @@ export function LeaderboardTable({
             <th>Trader</th>
             <th>Joined</th>
             <th>{renderMetricHeader()}</th>
-            <th style={{ textAlign: "right" }}>P&amp;L</th>
+            <th style={{ textAlign: "right", whiteSpace: "nowrap" }}>P&amp;L</th>
           </tr>
         </thead>
         <tbody>
           {traders.map((trader) => {
-            const pnlClass = trader.pnlUsd >= 0 ? "positive" : "negative";
             return (
               <tr key={trader.slug}>
                 <td className="rank-col">{trader.rank}</td>
@@ -82,7 +81,7 @@ export function LeaderboardTable({
                 }>
                   {renderMetricValue(trader)}
                 </td>
-                <td className={`${pnlClass} profit-col`}>
+                <td className="profit-col" style={{ whiteSpace: "nowrap", color: "var(--text)", fontWeight: 500, textAlign: "right" }}>
                   {formatPnl(trader.pnlUsd)}
                 </td>
               </tr>

@@ -101,6 +101,70 @@ const SIZE_OPTS = [{ label: "$100+", value: "100" }, { label: "$1k+", value: "10
 const SCORE_OPTS = ["50", "60", "70", "80"];
 const SHARPE_OPTS = ["0.0", "0.5", "1.0", "1.5", "2.0"];
 
+export function RecentTradesTableSkeleton() {
+  const th: React.CSSProperties = {
+    color: "#ffffff", fontWeight: 700, fontSize: "0.88rem",
+    padding: "12px 16px", textAlign: "left",
+    borderBottom: "1px solid rgba(255,255,255,0.08)",
+    whiteSpace: "nowrap", background: "transparent", fontFamily: "Inter,sans-serif"
+  };
+  const td: React.CSSProperties = {
+    padding: "11px 16px", verticalAlign: "middle",
+    borderBottom: "1px solid rgba(255,255,255,0.05)",
+    fontFamily: "Inter,sans-serif", fontSize: "0.88rem"
+  };
+
+  return (
+    <div style={{ fontFamily: "Inter,sans-serif", overflowX: "auto" }}>
+      <table style={{ width: "100%", borderCollapse: "collapse" }}>
+        <thead>
+          <tr>
+            <th style={{ ...th, minWidth: 260 }}>Trader</th>
+            <th style={{ ...th, minWidth: 240 }}>Market</th>
+            <th style={{ ...th, textAlign: "center" }}>Side</th>
+            <th style={th}>Price</th>
+            <th style={th}>Amount</th>
+            <th style={{ ...th, textAlign: "right", paddingRight: 20 }}>Time</th>
+          </tr>
+        </thead>
+        <tbody>
+          {Array.from({ length: 6 }).map((_, i) => (
+            <tr key={i} style={{ background: "rgba(255,255,255,0.015)" }}>
+              <td style={td}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <span className="skeleton-pulse" style={{ width: "32px", height: "32px", borderRadius: "50%", flexShrink: 0 }} />
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <span className="skeleton-pulse" style={{ width: "80px", height: "14px" }} />
+                    <span className="skeleton-pulse" style={{ width: "18px", height: "18px", borderRadius: "50%" }} />
+                  </div>
+                </div>
+              </td>
+              <td style={td}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <span className="skeleton-pulse" style={{ width: "18px", height: "18px", borderRadius: "50%", flexShrink: 0 }} />
+                  <span className="skeleton-pulse" style={{ width: "180px", height: "14px" }} />
+                </div>
+              </td>
+              <td style={{ ...td, textAlign: "center" }}>
+                <span className="skeleton-pulse" style={{ width: "20px", height: "14px" }} />
+              </td>
+              <td style={td}>
+                <span className="skeleton-pulse" style={{ width: "35px", height: "14px" }} />
+              </td>
+              <td style={td}>
+                <span className="skeleton-pulse" style={{ width: "50px", height: "14px" }} />
+              </td>
+              <td style={{ ...td, textAlign: "right", paddingRight: 20 }}>
+                <span className="skeleton-pulse" style={{ width: "60px", height: "14px" }} />
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 export function RecentTradesTable({ items, limit = 20 }: { items: RecentTrade[]; limit?: number }) {
   const [minSize, setMinSize] = useState("0");
   const [greaterThan95, setGreaterThan95] = useState(false);

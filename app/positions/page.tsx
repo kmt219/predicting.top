@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { FilterBar, FilterChip } from "@/components/filter-bar";
+
 import { SiteHeader } from "@/components/site-header";
 import { PositionsList } from "@/components/positions-list";
 import { PositionMarket } from "@/lib/types";
@@ -29,6 +29,60 @@ const minOptions = [
   { label: "$400k+", value: "$400k+" }
 ];
 
+function PositionsListSkeleton() {
+  return (
+    <div className="positions-list" style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+      {Array.from({ length: 4 }).map((_, i) => (
+        <section key={i} className="panel position-card" style={{
+          padding: "16px",
+          border: "1px solid var(--border)",
+          borderRadius: "4px",
+          background: "var(--panel)"
+        }}>
+          {/* Card Header Info skeleton */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px", gap: "16px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "12px", width: "70%" }}>
+              <span className="skeleton-pulse" style={{ width: "32px", height: "32px", borderRadius: "50%", flexShrink: 0 }} />
+              <div style={{ display: "flex", flexDirection: "column", gap: "4px", width: "100%" }}>
+                <span className="skeleton-pulse" style={{ width: "100%", height: "14px" }} />
+                <span className="skeleton-pulse" style={{ width: "40px", height: "12px" }} />
+              </div>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "6px", flexShrink: 0 }}>
+              <span className="skeleton-pulse" style={{ width: "70px", height: "14px" }} />
+              <span className="skeleton-pulse" style={{ width: "100px", height: "12px" }} />
+            </div>
+          </div>
+          <span className="skeleton-pulse" style={{ width: "60px", height: "12px", marginBottom: "8px" }} />
+          {/* Table skeleton */}
+          <div style={{ borderTop: "1px solid var(--border)", paddingTop: "8px" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <tbody>
+                {Array.from({ length: 3 }).map((_, rIdx) => (
+                  <tr key={rIdx}>
+                    <td style={{ padding: "8px 8px 8px 0" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                        <span className="skeleton-pulse" style={{ width: "16px", height: "16px", borderRadius: "50%" }} />
+                        <span className="skeleton-pulse" style={{ width: "70px", height: "12px" }} />
+                      </div>
+                    </td>
+                    <td style={{ padding: "8px 8px" }}><span className="skeleton-pulse" style={{ width: "15px", height: "12px" }} /></td>
+                    <td style={{ padding: "8px 8px" }}><span className="skeleton-pulse" style={{ width: "20px", height: "12px" }} /></td>
+                    <td style={{ padding: "8px 8px" }}><span className="skeleton-pulse" style={{ width: "25px", height: "12px" }} /></td>
+                    <td style={{ padding: "8px 8px" }}><span className="skeleton-pulse" style={{ width: "50px", height: "12px" }} /></td>
+                    <td style={{ padding: "8px 8px" }}><span className="skeleton-pulse" style={{ width: "35px", height: "12px" }} /></td>
+                    <td style={{ padding: "8px 8px 4px 0", textAlign: "right" }}><span className="skeleton-pulse" style={{ width: "60px", height: "12px" }} /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      ))}
+    </div>
+  );
+}
+
 export default function PositionsPage() {
   const [side, setSide] = useState<"ALL" | "YES" | "NO">("ALL");
   const platform = "ALL" as const;
@@ -37,6 +91,21 @@ export default function PositionsPage() {
   const [sharpeFloor, setSharpeFloor] = useState<string>("Any");
   const [endsFloor, setEndsFloor] = useState<string>("Any");
   const [minExposure, setMinExposure] = useState<string>("Any");
+
+  const [theme, setTheme] = useState<"dark" | "light">("dark");
+
+  useEffect(() => {
+    const savedTheme = (localStorage.getItem("theme") as "dark" | "light") || "dark";
+    setTheme(savedTheme);
+    document.documentElement.setAttribute("data-theme", savedTheme);
+  }, []);
+
+  const toggleTheme = () => {
+    const nextTheme = theme === "dark" ? "light" : "dark";
+    setTheme(nextTheme);
+    localStorage.setItem("theme", nextTheme);
+    document.documentElement.setAttribute("data-theme", nextTheme);
+  };
 
   const [allPositions, setAllPositions] = useState<PositionMarket[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -75,20 +144,7 @@ export default function PositionsPage() {
   const totalMarkets = filtered.length;
   const totalPositions = filtered.reduce((acc, item) => acc + item.traders.length, 0);
 
-  const selectStyle: React.CSSProperties = {
-    background: "rgba(255, 255, 255, 0.02)",
-    border: "1px solid var(--border)",
-    borderRadius: "6px",
-    color: "#ffffff",
-    padding: "5px 24px 5px 10px",
-    fontSize: "0.85rem",
-    appearance: "none",
-    backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.6)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`,
-    backgroundRepeat: "no-repeat",
-    backgroundPosition: "right 8px center",
-    cursor: "pointer",
-    fontFamily: "Inter, var(--font-sans), sans-serif"
-  };
+
 
   const labelPrefixStyle: React.CSSProperties = {
     fontSize: "0.82rem",
@@ -104,44 +160,61 @@ export default function PositionsPage() {
       <section className="panel page-panel" style={{ marginBottom: "24px" }}>
         <div className="page-header-row">
           <div>
-            <p className="eyebrow">Conviction</p>
             <h1 className="page-title">Top Positions</h1>
             <p className="muted" style={{ marginTop: 10, maxWidth: 680, fontSize: "0.95rem" }}>$1k+ positions from top prediction traders</p>
           </div>
 
-          <div className="page-header-actions" style={{ gap: 10 }}>
+          <div className="page-header-actions" style={{ display: "flex", gap: 10, alignItems: "center" }}>
             <Link
               href="/"
-              className="nav-tab active"
               style={{
-                padding: "10px 16px",
-                borderRadius: "10px",
+                padding: "7px 14px",
+                borderRadius: "4px",
                 color: "var(--text)",
-                background: "rgba(255, 255, 255, 0.08)",
+                background: "transparent",
                 border: "1px solid var(--border)",
-                fontSize: "0.9rem",
-                fontWeight: 600,
-                textDecoration: "none"
+                fontSize: "0.85rem",
+                fontWeight: 500,
+                fontFamily: "Inter, var(--font-sans), sans-serif",
+                textDecoration: "none",
+                transition: "background-color 120ms ease, border-color 120ms ease"
               }}
             >
               Leaderboard
             </Link>
+            
             <button
-              type="button"
-              aria-label="Refresh positions"
+              onClick={toggleTheme}
               style={{
-                width: 36,
-                height: 36,
-                borderRadius: 12,
-                border: "1px solid var(--border)",
-                background: "rgba(255,255,255,0.04)",
-                color: "#ffffff",
-                display: "inline-flex",
+                background: "none",
+                border: "none",
+                color: "var(--muted)",
+                cursor: "pointer",
+                padding: 6,
+                display: "flex",
                 alignItems: "center",
-                justifyContent: "center"
+                justifyContent: "center",
+                transition: "color 120ms ease"
               }}
+              aria-label="Toggle theme"
             >
-              ↻
+              {theme === "dark" ? (
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>
+                </svg>
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="4"/>
+                  <path d="M12 2v2"/>
+                  <path d="M12 20v2"/>
+                  <path d="M4.93 4.93l1.41 1.41"/>
+                  <path d="M17.66 17.66l1.41 1.41"/>
+                  <path d="M2 12h2"/>
+                  <path d="M20 12h2"/>
+                  <path d="M6.34 17.66l-1.41 1.41"/>
+                  <path d="M19.07 4.93l-1.41 1.41"/>
+                </svg>
+              )}
             </button>
           </div>
         </div>
@@ -149,67 +222,107 @@ export default function PositionsPage() {
         <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", gap: "12px", marginBottom: 18, alignItems: "center" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
             <span style={labelPrefixStyle}>Side:</span>
-            <FilterChip label="All" active={side === "ALL"} onClick={() => setSide("ALL")} style={side === "ALL" ? { background: "#ffffff", color: "#000000", fontWeight: 700 } : { color: "var(--muted)", fontWeight: 700 }} />
-            <FilterChip label="Yes" active={side === "YES"} onClick={() => setSide("YES")} style={side === "YES" ? { background: "#ffffff", color: "#000000", fontWeight: 700 } : { color: "var(--muted)", fontWeight: 700 }} />
-            <FilterChip label="No" active={side === "NO"} onClick={() => setSide("NO")} style={side === "NO" ? { background: "#ffffff", color: "#000000", fontWeight: 700 } : { color: "var(--muted)", fontWeight: 700 }} />
+            {[
+              { label: "All", value: "ALL", active: side === "ALL", onClick: () => setSide("ALL") },
+              { label: "Yes", value: "YES", active: side === "YES", onClick: () => setSide("YES") },
+              { label: "No", value: "NO", active: side === "NO", onClick: () => setSide("NO") }
+            ].map((chip) => (
+              <button
+                key={chip.label}
+                type="button"
+                onClick={chip.onClick}
+                style={{
+                  background: chip.active ? "var(--text)" : "transparent",
+                  color: chip.active ? "var(--bg)" : "var(--text)",
+                  border: chip.active ? "none" : "1px solid var(--border)",
+                  borderRadius: "4px",
+                  padding: "5px 12px",
+                  fontSize: "0.78rem",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  transition: "all 120ms ease"
+                }}
+              >
+                {chip.label}
+              </button>
+            ))}
           </div>
 
-          <span style={{ fontSize: "0.95rem", color: "var(--muted)", fontFamily: "Inter, var(--font-sans), sans-serif" }}>
+          <span style={{ fontSize: "0.85rem", color: "var(--muted)", fontFamily: "Inter, var(--font-sans), sans-serif", fontWeight: 500 }}>
             {isLoading ? "—" : totalMarkets} markets · {isLoading ? "—" : totalPositions} positions
           </span>
         </div>
 
-        <FilterBar className="compact-filter-bar" style={{ gap: "14px", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap" }}>
-          <FilterChip
-            label="Hide 95%+"
-            active={hide95}
+        {/* Boxed secondary filter row */}
+        <div className="compact-filter-bar" style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "14px",
+          background: "var(--panel-2)",
+          border: "1px solid var(--border)",
+          borderRadius: "4px",
+          padding: "8px 12px",
+          flexWrap: "wrap",
+          width: "100%"
+        }}>
+          <button
+            type="button"
             onClick={() => setHide95((val) => !val)}
-            style={hide95 ? { background: "#ffffff", color: "#000000", fontWeight: 700 } : { color: "var(--muted)", fontWeight: 700 }}
-          />
+            style={{
+              background: hide95 ? "var(--text)" : "transparent",
+              color: hide95 ? "var(--bg)" : "var(--text)",
+              border: hide95 ? "none" : "1px solid var(--border)",
+              borderRadius: "4px",
+              padding: "5px 10px",
+              fontSize: "0.78rem",
+              fontWeight: 700,
+              cursor: "pointer",
+              transition: "all 120ms ease"
+            }}
+          >
+            Hide 95%+
+          </button>
 
-          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-            <span style={labelPrefixStyle}>Score:</span>
-            <select value={scoreFloor} onChange={(e) => setScoreFloor(e.target.value)} style={selectStyle}>
-              {scoreOptions.map((opt) => (
-                <option key={opt.value} value={opt.value} style={{ background: "#111", color: "#fff" }}>{opt.label}</option>
-              ))}
-            </select>
-          </div>
-
-          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-            <span style={labelPrefixStyle}>Sharpe:</span>
-            <select value={sharpeFloor} onChange={(e) => setSharpeFloor(e.target.value)} style={selectStyle}>
-              {sharpeOptions.map((opt) => (
-                <option key={opt.value} value={opt.value} style={{ background: "#111", color: "#fff" }}>{opt.label}</option>
-              ))}
-            </select>
-          </div>
-
-          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-            <span style={labelPrefixStyle}>Ends:</span>
-            <select value={endsFloor} onChange={(e) => setEndsFloor(e.target.value)} style={selectStyle}>
-              {endsOptions.map((opt) => (
-                <option key={opt.value} value={opt.value} style={{ background: "#111", color: "#fff" }}>{opt.label}</option>
-              ))}
-            </select>
-          </div>
-
-          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-            <span style={labelPrefixStyle}>Min:</span>
-            <select value={minExposure} onChange={(e) => setMinExposure(e.target.value)} style={selectStyle}>
-              {minOptions.map((opt) => (
-                <option key={opt.value} value={opt.value} style={{ background: "#111", color: "#fff" }}>{opt.label}</option>
-              ))}
-            </select>
-          </div>
-        </FilterBar>
+          {[
+            { label: "Score:", value: scoreFloor, onChange: setScoreFloor, options: scoreOptions },
+            { label: "Sharpe:", value: sharpeFloor, onChange: setSharpeFloor, options: sharpeOptions },
+            { label: "Ends:", value: endsFloor, onChange: setEndsFloor, options: endsOptions },
+            { label: "Min:", value: minExposure, onChange: setMinExposure, options: minOptions }
+          ].map((group) => (
+            <div key={group.label} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <span style={labelPrefixStyle}>{group.label}</span>
+              <div style={{ position: "relative" }}>
+                <select
+                  value={group.value}
+                  onChange={(e) => group.onChange(e.target.value)}
+                  style={{
+                    appearance: "none",
+                    background: "transparent",
+                    border: "1px solid var(--border)",
+                    borderRadius: "4px",
+                    color: "var(--text)",
+                    padding: "5px 24px 5px 10px",
+                    fontSize: "0.78rem",
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.6)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`,
+                    backgroundRepeat: "no-repeat",
+                    backgroundPosition: "right 8px center",
+                    backgroundSize: "10px"
+                  }}
+                >
+                  {group.options.map((opt) => (
+                    <option key={opt.value} value={opt.value} style={{ background: "var(--panel)", color: "var(--text)" }}>{opt.label}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          ))}
+        </div>
       </section>
 
       {isLoading ? (
-        <div style={{ textAlign: "center", padding: "80px 0", color: "var(--muted)" }}>
-          <div style={{ fontSize: "1.5rem", marginBottom: 12 }}>Loading</div>
-          <p style={{ margin: 0, fontSize: "0.9rem" }}>Fetching live positions from Polymarket…</p>
-        </div>
+        <PositionsListSkeleton />
       ) : (
         <PositionsList items={filtered} scoreFloor={scoreFloor} sharpeFloor={sharpeFloor} />
       )}

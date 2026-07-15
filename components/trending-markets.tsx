@@ -13,9 +13,10 @@ function getMarketFlagEmoji(title: string): string {
   const t = title.toLowerCase();
   if (t.includes("argentina")) return "🇦🇷";
   if (t.includes("france")) return "🇫🇷";
-  if (t.includes("england")) return "🇬🇧";
+  if (t.includes("england")) return "🏴󠁧󠁢󠁥󠁮󠁧󠁿";
+  if (t.includes("spain")) return "🇪🇸";
   if (t.includes("iran")) return "🇮🇷";
-  if (t.includes("fed ") || t.includes("rate") || t.includes("inflation") || t.includes("interest")) return "🏦";
+  if (t.includes("fed ") || t.includes("rate") || t.includes("inflation") || t.includes("interest")) return "👨‍💼";
   if (t.includes("btc") || t.includes("bitcoin") || t.includes("crypto")) return "🪙";
   return "🌐";
 }
@@ -41,8 +42,8 @@ export function TrendingMarketCard({ market }: { market: TrendingMarket }) {
         flexDirection: "column",
         gap: "12px",
         padding: "16px",
-        borderRadius: "12px",
-        background: "rgba(255, 255, 255, 0.02)",
+        borderRadius: "4px",
+        background: "var(--panel)",
         border: "1px solid var(--border)",
         transition: "all 150ms ease",
         cursor: "pointer"
@@ -52,115 +53,201 @@ export function TrendingMarketCard({ market }: { market: TrendingMarket }) {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px" }}>
         <div style={{ display: "flex", alignItems: "flex-start", gap: "10px" }}>
           <span className="market-flag-badge" style={{
-            width: "28px",
-            height: "28px",
+            width: "24px",
+            height: "24px",
             borderRadius: "50%",
             background: "rgba(255, 255, 255, 0.03)",
             border: "1px solid var(--border)",
             display: "inline-flex",
             alignItems: "center",
             justifyContent: "center",
-            fontSize: "1rem",
+            fontSize: "0.95rem",
             flexShrink: 0
           }}>
             {getMarketFlagEmoji(market.title)}
           </span>
-          <span id={`market-title-${market.slug}`} className="market-title">
+          <span id={`market-title-${market.slug}`} className="market-title" style={{
+            fontSize: "0.95rem",
+            fontWeight: 600,
+            color: "var(--text)",
+            lineHeight: 1.4,
+            display: "-webkit-box",
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: "vertical",
+            overflow: "hidden"
+          }}>
             {market.title}
           </span>
         </div>
-        <span className="market-prob" style={{ color: probColor }}>{probDisplay}</span>
+        <span className="market-prob" style={{ color: probColor, fontWeight: 700, fontSize: "0.95rem", flexShrink: 0 }}>
+          {probDisplay}
+        </span>
       </div>
 
-      {/* Stats row */}
-      <div className="market-stats">
-        <div className="market-stats-left">
-          <span className="market-volume">{market.volumeLabel}</span>
-          <span className="middot">·</span>
-          <span className="market-trader-count">{market.traders.length} traders</span>
+      {/* Stats row: left (Volume · traders count), right (Inflow · EndsIn) */}
+      <div style={{
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        fontSize: "0.8rem",
+        color: "var(--muted)",
+        marginTop: "auto"
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+          <span style={{ fontWeight: 700, color: "var(--text)" }}>{market.volumeLabel}</span>
+          <span>·</span>
+          <span>{market.traders.length} traders</span>
         </div>
-        <div className="market-stats-right">
-          <span className={market.momentum.startsWith("+") ? "positive" : "negative"} style={{ fontWeight: 700 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+          <span style={{
+            fontWeight: 700,
+            color: market.momentum.startsWith("+") ? "var(--green)" : "var(--red)"
+          }}>
             {market.momentum}
           </span>
-          <span className="middot">·</span>
-          <span className="market-endsin">{market.endsIn}</span>
+          <span>·</span>
+          <span>{market.endsIn}</span>
         </div>
       </div>
 
       {/* Traders Mini Table */}
-      <div className="market-traders" style={{ marginTop: "8px", borderTop: "1px solid var(--border)", paddingTop: "8px" }}>
+      <div className="market-traders" style={{ marginTop: "4px", borderTop: "1px solid var(--border)", paddingTop: "8px" }}>
         <div className="market-traders-scroll" style={{ width: "100%" }}>
           <table className="market-traders-table" style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.78rem" }}>
-          <thead>
-            <tr>
-              <th style={{ textAlign: "left", color: "var(--muted)", fontWeight: 500, paddingBottom: "6px" }}>Trader</th>
-              <th style={{ textAlign: "left", color: "var(--muted)", fontWeight: 500, paddingBottom: "6px" }}>TXs</th>
-              <th style={{ textAlign: "left", color: "var(--muted)", fontWeight: 500, paddingBottom: "6px" }}>Inflow</th>
-              <th style={{ textAlign: "right", color: "var(--muted)", fontWeight: 500, paddingBottom: "6px" }}>Last</th>
-            </tr>
-          </thead>
-          <tbody>
-            {market.traders.slice(0, 3).map((t, idx) => {
-              const [yesTxs, noTxs] = t.txs.split("/");
-              const isPositiveInflow = t.inflow >= 0;
-              const inflowText = isPositiveInflow
-                ? `+$${Math.round(t.inflow).toLocaleString()}`
-                : `-$${Math.abs(Math.round(t.inflow)).toLocaleString()}`;
-              const inflowClass = isPositiveInflow ? "positive" : "negative";
-              return (
-                <tr
-                  key={`${t.name}-${idx}`}
-                  tabIndex={0}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    window.location.href = `/account/${encodeURIComponent(t.name)}`;
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
+            <thead>
+              <tr>
+                <th style={{ textAlign: "left", color: "var(--muted)", fontWeight: 700, fontSize: "0.72rem", paddingBottom: "6px", textTransform: "uppercase", letterSpacing: "0.05em" }}>Trader</th>
+                <th style={{ textAlign: "left", color: "var(--muted)", fontWeight: 700, fontSize: "0.72rem", paddingBottom: "6px", textTransform: "uppercase", letterSpacing: "0.05em" }}>TXs</th>
+                <th style={{ textAlign: "left", color: "var(--muted)", fontWeight: 700, fontSize: "0.72rem", paddingBottom: "6px", textTransform: "uppercase", letterSpacing: "0.05em" }}>Inflow</th>
+                <th style={{ textAlign: "right", color: "var(--muted)", fontWeight: 700, fontSize: "0.72rem", paddingBottom: "6px", textTransform: "uppercase", letterSpacing: "0.05em" }}>Last</th>
+              </tr>
+            </thead>
+            <tbody>
+              {market.traders.slice(0, 3).map((t, idx) => {
+                const [yesTxs, noTxs] = t.txs.split("/");
+                const isPositiveInflow = t.inflow >= 0;
+                const inflowText = isPositiveInflow
+                  ? `+$${Math.round(t.inflow).toLocaleString()}`
+                  : `-$${Math.abs(Math.round(t.inflow)).toLocaleString()}`;
+                const inflowColor = isPositiveInflow ? "var(--green)" : "var(--red)";
+                return (
+                  <tr
+                    key={`${t.name}-${idx}`}
+                    tabIndex={0}
+                    onClick={(e) => {
                       e.stopPropagation();
                       window.location.href = `/account/${encodeURIComponent(t.name)}`;
-                    }
-                  }}
-                  style={{
-                    borderTop: idx > 0 ? "1px solid rgba(255, 255, 255, 0.02)" : "none",
-                    cursor: "pointer",
-                  }}
-                >
-                  <td style={{ padding: "6px 0", color: "rgba(255, 255, 255, 0.8)", fontWeight: 500 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                      <Image
-                        src={`https://api.dicebear.com/9.x/glass/svg?seed=${t.name}`}
-                        alt={t.name}
-                        width={20}
-                        height={20}
-                        className="avatar"
-                        style={{ width: 20, height: 20, borderRadius: "50%" }}
-                        unoptimized
-                      />
-                      <span style={{ textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap", maxWidth: "110px", display: "inline-block" }}>
-                        {t.name}
-                      </span>
-                    </div>
-                  </td>
-                  <td style={{ padding: "6px 0" }}>
-                    <span className="positive">{yesTxs}</span>
-                    <span style={{ color: "rgba(255, 255, 255, 0.2)", margin: "0 6px" }}>/</span>
-                    <span className="negative">{noTxs}</span>
-                  </td>
-                  <td className={inflowClass} style={{ padding: "6px 0", fontWeight: 600 }}>
-                    {inflowText}
-                  </td>
-                  <td style={{ padding: "6px 0", textAlign: "right", color: "var(--muted)" }}>
-                    <span>{t.last}</span>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.stopPropagation();
+                        window.location.href = `/account/${encodeURIComponent(t.name)}`;
+                      }
+                    }}
+                    style={{
+                      borderTop: idx > 0 ? "1px solid rgba(255, 255, 255, 0.02)" : "none",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <td style={{ padding: "6px 0", color: "var(--text)", fontWeight: 500 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                        <Image
+                          src={`https://api.dicebear.com/9.x/glass/svg?seed=${t.name}`}
+                          alt={t.name}
+                          width={16}
+                          height={16}
+                          style={{ width: 16, height: 16, borderRadius: "50%" }}
+                          unoptimized
+                        />
+                        <span style={{ textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap", maxWidth: "90px", display: "inline-block" }}>
+                          {t.name}
+                        </span>
+                      </div>
+                    </td>
+                    <td style={{ padding: "6px 0" }}>
+                      <span style={{ color: "var(--green)", fontWeight: 600 }}>{yesTxs}</span>
+                      <span style={{ color: "rgba(255, 255, 255, 0.2)", margin: "0 4px" }}>/</span>
+                      <span style={{ color: "var(--red)", fontWeight: 600 }}>{noTxs}</span>
+                    </td>
+                    <td style={{ padding: "6px 0", fontWeight: 600, color: inflowColor }}>
+                      {inflowText}
+                    </td>
+                    <td style={{ padding: "6px 0", textAlign: "right", color: "var(--muted)" }}>
+                      <span>{t.last}</span>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
           </table>
         </div>
       </div>
+    </div>
+  );
+}
+
+export function TrendingMarketsSkeleton() {
+  return (
+    <div style={{
+      display: "grid",
+      gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))",
+      gap: "20px",
+      marginTop: "24px"
+    }}>
+      {Array.from({ length: 6 }).map((_, i) => (
+        <div key={i} className="panel market-card" style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: "12px",
+          padding: "16px",
+          borderRadius: "4px",
+          background: "var(--panel)",
+          border: "1px solid var(--border)"
+        }}>
+          {/* Title & Probability skeleton */}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px" }}>
+            <div style={{ display: "flex", alignItems: "flex-start", gap: "10px", width: "80%" }}>
+              <span className="skeleton-pulse" style={{ width: "24px", height: "24px", borderRadius: "50%", flexShrink: 0 }} />
+              <div style={{ display: "flex", flexDirection: "column", gap: "4px", width: "100%" }}>
+                <span className="skeleton-pulse" style={{ width: "100%", height: "14px" }} />
+                <span className="skeleton-pulse" style={{ width: "70%", height: "14px" }} />
+              </div>
+            </div>
+            <span className="skeleton-pulse" style={{ width: "35px", height: "16px", flexShrink: 0 }} />
+          </div>
+          {/* Stats row skeleton */}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "auto" }}>
+            <span className="skeleton-pulse" style={{ width: "120px", height: "14px" }} />
+            <span className="skeleton-pulse" style={{ width: "100px", height: "14px" }} />
+          </div>
+          {/* Traders Mini Table skeleton */}
+          <div style={{ marginTop: "4px", borderTop: "1px solid var(--border)", paddingTop: "8px" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <tbody>
+                {Array.from({ length: 3 }).map((_, rIdx) => (
+                  <tr key={rIdx}>
+                    <td style={{ padding: "6px 0" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                        <span className="skeleton-pulse" style={{ width: "16px", height: "16px", borderRadius: "50%" }} />
+                        <span className="skeleton-pulse" style={{ width: "60px", height: "12px" }} />
+                      </div>
+                    </td>
+                    <td style={{ padding: "6px 0" }}>
+                      <span className="skeleton-pulse" style={{ width: "35px", height: "12px" }} />
+                    </td>
+                    <td style={{ padding: "6px 0" }}>
+                      <span className="skeleton-pulse" style={{ width: "50px", height: "12px" }} />
+                    </td>
+                    <td style={{ padding: "6px 0", textAlign: "right" }}>
+                      <span className="skeleton-pulse" style={{ width: "30px", height: "12px" }} />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
@@ -261,85 +348,139 @@ export function TrendingMarketsSection() {
           }}>Trending Markets</h2>
 
           {/* Filter Row matching screenshot */}
-          <div className="trending-filter-row">
+          <div className="trending-filter-row" style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "10px",
+            background: "var(--panel-2)",
+            border: "1px solid var(--border)",
+            borderRadius: "4px",
+            padding: "8px 12px",
+            flexWrap: "wrap",
+            width: "100%",
+            marginTop: "12px"
+          }}>
             {/* Timeframe selector group */}
-            <div className="trending-pill-group">
+            <div className="trending-pill-group" style={{
+              display: "inline-flex",
+              alignItems: "center",
+              background: "rgba(0, 0, 0, 0.15)",
+              border: "1px solid var(--border)",
+              borderRadius: "4px",
+              padding: "2px",
+              gap: "2px"
+            }}>
               {windows.map((w) => (
                 <button
                   key={w}
-                  className={`trending-pill ${w === trendWindow ? "active" : ""}`}
                   onClick={() => setTrendWindow(w)}
                   type="button"
+                  style={{
+                    background: w === trendWindow ? "var(--text)" : "transparent",
+                    color: w === trendWindow ? "var(--bg)" : "var(--muted)",
+                    border: "none",
+                    borderRadius: "3px",
+                    padding: "5px 10px",
+                    fontSize: "0.78rem",
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    transition: "all 120ms ease"
+                  }}
                 >
                   {w}
                 </button>
               ))}
             </div>
 
-            <button
-              type="button"
-              className={`trending-filter-button ${greaterThan95 ? "active" : ""}`}
-              onClick={() => setGreaterThan95(!greaterThan95)}
-            >
-              &gt;95%
-            </button>
+            {/* Tag Buttons: >95%, Sports, Ended, <30d, 5+ */}
+            {[
+              { label: ">95%", active: greaterThan95, onClick: () => setGreaterThan95(!greaterThan95) },
+              { label: "Sports", active: sportsOnly, onClick: () => setSportsOnly(!sportsOnly) },
+              { label: "Ended", active: endedOnly, onClick: () => setEndedOnly(!endedOnly) },
+              { label: "<30d", active: lessThan30d, onClick: () => setLessThan30d(!lessThan30d) },
+              { label: "5+", active: fivePlusTraders, onClick: () => setFivePlusTraders(!fivePlusTraders) }
+            ].map((tag) => (
+              <button
+                key={tag.label}
+                type="button"
+                onClick={tag.onClick}
+                style={{
+                  background: tag.active ? "var(--text)" : "transparent",
+                  color: tag.active ? "var(--bg)" : "var(--text)",
+                  border: tag.active ? "none" : "1px solid var(--border)",
+                  borderRadius: "4px",
+                  padding: "5px 10px",
+                  fontSize: "0.78rem",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  transition: "all 120ms ease"
+                }}
+              >
+                {tag.label}
+              </button>
+            ))}
 
-            <button
-              type="button"
-              className={`trending-filter-button ${sportsOnly ? "active" : ""}`}
-              onClick={() => setSportsOnly(!sportsOnly)}
-            >
-              Sports
-            </button>
+            <span className="trending-divider" style={{
+              width: "1px",
+              height: "18px",
+              background: "var(--border)",
+              margin: "0 4px"
+            }} />
 
-            <button
-              type="button"
-              className={`trending-filter-button ${endedOnly ? "active" : ""}`}
-              onClick={() => setEndedOnly(!endedOnly)}
-            >
-              Ended
-            </button>
-
-            <button
-              type="button"
-              className={`trending-filter-button ${lessThan30d ? "active" : ""}`}
-              onClick={() => setLessThan30d(!lessThan30d)}
-            >
-              &lt;30d
-            </button>
-
-            <button
-              type="button"
-              className={`trending-filter-button ${fivePlusTraders ? "active" : ""}`}
-              onClick={() => setFivePlusTraders(!fivePlusTraders)}
-            >
-              5+
-            </button>
-
-            <span className="trending-divider" />
-
-            <div className="trending-select-wrapper">
+            {/* Score Dropdown */}
+            <div className="trending-select-wrapper" style={{ position: "relative" }}>
               <select
                 className="trending-select"
                 value={scoreFloor}
                 onChange={(e) => setScoreFloor(e.target.value)}
+                style={{
+                  appearance: "none",
+                  background: "transparent",
+                  border: "1px solid var(--border)",
+                  borderRadius: "4px",
+                  color: "var(--text)",
+                  padding: "6px 24px 6px 12px",
+                  fontSize: "0.78rem",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.6)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`,
+                  backgroundRepeat: "no-repeat",
+                  backgroundPosition: "right 8px center",
+                  backgroundSize: "10px"
+                }}
               >
-                <option value="Any">Score</option>
+                <option value="Any" style={{ background: "var(--panel)", color: "var(--text)" }}>Score</option>
                 {scoreOptions.filter(o => o !== "Any").map((v) => (
-                  <option key={v} value={v}>{v}+</option>
+                  <option key={v} value={v} style={{ background: "var(--panel)", color: "var(--text)" }}>{v}+</option>
                 ))}
               </select>
             </div>
 
-            <div className="trending-select-wrapper">
+            {/* Sharpe Dropdown */}
+            <div className="trending-select-wrapper" style={{ position: "relative" }}>
               <select
                 className="trending-select"
                 value={sharpeFloor}
                 onChange={(e) => setSharpeFloor(e.target.value)}
+                style={{
+                  appearance: "none",
+                  background: "transparent",
+                  border: "1px solid var(--border)",
+                  borderRadius: "4px",
+                  color: "var(--text)",
+                  padding: "6px 24px 6px 12px",
+                  fontSize: "0.78rem",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.6)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`,
+                  backgroundRepeat: "no-repeat",
+                  backgroundPosition: "right 8px center",
+                  backgroundSize: "10px"
+                }}
               >
-                <option value="Any">Sharpe</option>
+                <option value="Any" style={{ background: "var(--panel)", color: "var(--text)" }}>Sharpe</option>
                 {sharpeOptions.filter(o => o !== "Any").map((v) => (
-                  <option key={v} value={v}>{v}+</option>
+                  <option key={v} value={v} style={{ background: "var(--panel)", color: "var(--text)" }}>{v}+</option>
                 ))}
               </select>
             </div>
@@ -351,10 +492,7 @@ export function TrendingMarketsSection() {
         <div className="trending-scroll-area">
           {/* Grid of cards */}
       {isLoading ? (
-        <div style={{ textAlign: "center", padding: "40px 0", color: "var(--muted)" }}>
-          <div style={{ fontSize: "1.2rem", marginBottom: 8 }}>Loading</div>
-          <p style={{ margin: 0, fontSize: "0.85rem" }}>Fetching trending markets...</p>
-        </div>
+        <TrendingMarketsSkeleton />
       ) : visibleItems.length === 0 ? (
         <div style={{ textAlign: "center", padding: "40px 0", color: "var(--muted)", background: "rgba(255,255,255,0.02)", borderRadius: 12, border: "1px solid var(--border)" }}>
           No trending markets found matching these filters.
