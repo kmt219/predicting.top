@@ -5,8 +5,7 @@ import { FilterBar, FilterChip, FilterDropdown, FilterGroup } from "@/components
 import { PageHeader } from "@/components/page-header";
 import { PositionsList } from "@/components/positions-list";
 import { SiteHeader } from "@/components/site-header";
-import { getPositions, getTraderProfile } from "@/lib/mock-data";
-import { PlatformCode } from "@/lib/types";
+import { PlatformCode, PositionMarket } from "@/lib/types";
 
 const sideOptions = [
   { label: "All", value: "ALL" },
@@ -51,7 +50,22 @@ export default function PositionsPage() {
   const [endsFloor, setEndsFloor] = useState<string>("Any");
   const [minExposure, setMinExposure] = useState<string>("Any");
 
-  const positions = getPositions(side, platform as PlatformCode | "ALL");
+  const [positions, setPositions] = useState<{ items: PositionMarket[] }>(() => ({ items: [] }));
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    setIsLoading(true);
+    fetch(`/api/v1/positions?side=${side}&platform=${platform}`)
+      .then(res => {
+        if (!res.ok) throw new Error("Failed to fetch positions");
+        return res.json();
+      })
+      .then(data => {
+        setPositions({ items: data.items || [] });
+      })
+      .catch(err => console.error("Error loading positions:", err))
+      .finally(() => setIsLoading(false));
+  }, [side, platform]);
 
   const filtered = useMemo(() => {
     return positions.items.filter((market) => {
@@ -71,20 +85,28 @@ export default function PositionsPage() {
       // 3. Sharpe filter
       if (sharpeFloor !== "Any") {
         const floor = parseFloat(sharpeFloor);
-        if (!market.traders.some((trader) => {
-          const profile = getTraderProfile(trader.traderSlug);
-          return profile ? profile.sharpe >= floor : false;
-        })) {
+        if (!market.traders.some((trader) => trader.sharpe != null && trader.sharpe >= floor)) {
           return false;
         }
       }
 
-      // 4. Ends filter
+      // 4. Ends filter (parse live endsIn strings dynamically)
       if (endsFloor !== "Any") {
         const maxDays = endsFloor === "<30d" ? 30 : 90;
-        let daysLeft = 170;
-        if (market.slug === "france-world-cup") daysLeft = 6;
-        else if (market.slug === "iran-regime-2027") daysLeft = 45;
+        let daysLeft = 999;
+        
+        const endsInStr = (market.endsIn || "Active").toLowerCase();
+        if (endsInStr === "ended") {
+          daysLeft = 0;
+        } else if (endsInStr.includes("mo left")) {
+          const match = endsInStr.match(/(\d+)\s*mo/);
+          if (match) daysLeft = parseInt(match[1]) * 30;
+        } else if (endsInStr.includes("d left")) {
+          const match = endsInStr.match(/(\d+)\s*d/);
+          if (match) daysLeft = parseInt(match[1]);
+        } else if (endsInStr.includes("h left")) {
+          daysLeft = 1;
+        }
         
         if (daysLeft > maxDays) {
           return false;

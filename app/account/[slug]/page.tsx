@@ -3,7 +3,7 @@ import Link from "next/link";
 import { MetricGrid, defaultProfileMetrics } from "@/components/metric-grid";
 import { PlatformBadges } from "@/components/platform-badges";
 import { ProfileChart } from "@/components/profile-chart";
-import { getTraderProfile } from "@/lib/mock-data";
+import { getLiveTraderProfile } from "@/lib/live-api";
 import { formatCurrency } from "@/lib/utils";
 import { notFound } from "next/navigation";
 
@@ -13,7 +13,7 @@ export default async function TraderProfilePage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const profile = getTraderProfile(slug);
+  const profile = await getLiveTraderProfile(slug);
 
   if (!profile) {
     notFound();

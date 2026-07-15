@@ -39,18 +39,28 @@ export function PositionsList({
           <section key={market.slug} className="panel position-card">
             <div className="position-card-header">
               <div>
-                <p className="eyebrow">{market.platform} {market.side}</p>
+                <p className="eyebrow">
+                  {market.platform}
+                  {market.priceLabel ? ` · ${market.priceLabel}` : ""}
+                  {market.endsIn ? ` · ${market.endsIn}` : ""}
+                  {` · ${market.tradersCount || market.traders.length} traders`}
+                </p>
                 <h2>{market.title}</h2>
               </div>
               <div className="position-stats">
                 <strong>{formatCurrency(market.marketValueUsd, true)}</strong>
-                <span className="muted">Smart money {market.smartMoneyShare}%</span>
+                <span className="muted">
+                  {market.smartMoneyYes !== undefined && market.smartMoneyNo !== undefined
+                    ? `Smart ${market.smartMoneyYes}%Y · ${market.smartMoneyNo}%N`
+                    : `Smart money ${market.smartMoneyShare}%`}
+                </span>
               </div>
             </div>
             <table className="position-table">
               <thead>
                 <tr>
                   <th>Trader</th>
+                  <th>Side</th>
                   <th>Score</th>
                   <th>Entry</th>
                   <th>P&amp;L</th>
@@ -60,9 +70,15 @@ export function PositionsList({
               </thead>
               <tbody>
                 {renderedTraders.map((trader) => (
-                  <tr key={`${market.slug}-${trader.traderSlug}`}>
+                  <tr key={`${market.slug}-${trader.traderSlug}-${trader.side}`}>
                     <td>
                       <Link href={`/account/${trader.traderSlug}`}>{trader.traderName}</Link>
+                    </td>
+                    <td 
+                      className={trader.side === "YES" ? "positive" : "negative"}
+                      style={{ fontWeight: 600 }}
+                    >
+                      {trader.side === "YES" ? "Y" : "N"}
                     </td>
                     <td>{trader.score}</td>
                     <td>{trader.entry.toFixed(2)}</td>

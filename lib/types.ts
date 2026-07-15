@@ -41,6 +41,8 @@ export interface TrendingMarket {
     txs: string;
     inflow: number;
     last: string;
+    score?: number;
+    sharpe?: number;
   }>;
   url: string;
   endsIn: string;
@@ -57,7 +59,9 @@ export interface RecentTrade {
   platform: PlatformCode;
   price: number;
   traderScore: number;
+  traderSharpe?: number;
   category: string;
+  type?: "buy" | "sell";
 }
 
 export interface PositionTrader {
@@ -68,16 +72,23 @@ export interface PositionTrader {
   pnlUsd: number;
   shares: string;
   valueUsd: number;
+  sharpe?: number;
+  side?: "YES" | "NO";
 }
 
 export interface PositionMarket {
   slug: string;
   title: string;
   platform: PlatformCode;
-  side: "YES" | "NO";
+  side?: "YES" | "NO";
   marketValueUsd: number;
   smartMoneyShare: number;
   traders: PositionTrader[];
+  endsIn?: string;
+  smartMoneyYes?: number;
+  smartMoneyNo?: number;
+  tradersCount?: number;
+  priceLabel?: string;
 }
 
 export interface TraderProfile extends TraderSummary {

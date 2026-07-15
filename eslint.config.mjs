@@ -11,7 +11,11 @@ const config = [
     ignores: [".next/**", "node_modules/**", "out/**", "build/**"]
   },
   ...compat.config({
-    extends: ["next/core-web-vitals", "next/typescript"]
+    extends: ["next/core-web-vitals", "next/typescript"],
+    rules: {
+      "@typescript-eslint/no-explicit-any": "off",
+      "@typescript-eslint/no-unused-vars": "warn"
+    }
   })
 ];
 

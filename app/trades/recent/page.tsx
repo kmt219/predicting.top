@@ -1,11 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { FilterBar, FilterChip, FilterDropdown, FilterGroup } from "@/components/filter-bar";
 import { PageHeader } from "@/components/page-header";
 import { RecentTrades } from "@/components/recent-trades";
 import { SiteHeader } from "@/components/site-header";
-import { getRecentTrades, getTraderProfile } from "@/lib/mock-data";
+import { RecentTrade } from "@/lib/types";
 
 const sizeOptions = [
   { label: "$100+", value: "100" },
@@ -44,7 +44,29 @@ export default function RecentTradesPage() {
   const [sharpeFloor, setSharpeFloor] = useState("Any");
   const [greaterThan95, setGreaterThan95] = useState(false);
   const [sportsOnly, setSportsOnly] = useState(false);
-  const trades = getRecentTrades();
+
+  const [trades, setTrades] = useState<{ items: RecentTrade[] }>(() => ({ items: [] }));
+  const [isLoading, setIsLoading] = useState(true);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isMounted) return;
+    setIsLoading(true);
+    fetch(`/api/v1/trades/recent?limit=100&minAmount=${minSize}`)
+      .then(res => {
+        if (!res.ok) throw new Error("Failed to fetch recent trades");
+        return res.json();
+      })
+      .then(data => {
+        setTrades({ items: data.items || [] });
+      })
+      .catch(err => console.error("Error loading recent trades:", err))
+      .finally(() => setIsLoading(false));
+  }, [minSize, isMounted]);
 
   const handleScoreChipClick = () => {
     if (scoreFilterActive) {
@@ -83,16 +105,23 @@ export default function RecentTradesPage() {
         if (greaterThan95 && trade.price < 95) return false;
         if (sportsOnly && trade.category !== "Sports") return false;
 
-        const trader = getTraderProfile(trade.traderSlug);
-        if (!trader) return false;
-
-        if (scoreFilterActive && scoreFloor !== "Any" && trader.smartScore < Number(scoreFloor)) return false;
-        if (sharpeFilterActive && sharpeFloor !== "Any" && trader.sharpe < Number(sharpeFloor)) return false;
+        if (scoreFilterActive && scoreFloor !== "Any" && trade.traderScore < Number(scoreFloor)) return false;
+        if (sharpeFilterActive && sharpeFloor !== "Any" && (trade.traderSharpe == null || trade.traderSharpe < Number(sharpeFloor))) return false;
 
         return true;
-      })
-      .sort((a, b) => b.sizeUsd - a.sizeUsd);
+      });
   }, [minSize, scoreFloor, sharpeFloor, scoreFilterActive, sharpeFilterActive, greaterThan95, sportsOnly, trades.items]);
+
+  if (!isMounted) {
+    return (
+      <main className="page-shell">
+        <SiteHeader active="trades" />
+        <div style={{ textAlign: "center", padding: "80px 0", color: "var(--muted)" }}>
+          Loading...
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="page-shell">

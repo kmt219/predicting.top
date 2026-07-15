@@ -117,8 +117,18 @@ export default function TrendingMarketsPage() {
 
     if (fivePlusTraders) result = result.filter((m) => m.traders.length >= 5);
 
+    if (scoreFloor !== "Any") {
+      const floor = scoreFloor === "60+" ? 60 : 70;
+      result = result.filter((m) => m.traders.some((trader) => trader.score != null && trader.score >= floor));
+    }
+
+    if (sharpeFloor !== "Any") {
+      const floor = parseFloat(sharpeFloor);
+      result = result.filter((m) => m.traders.some((trader) => trader.sharpe != null && trader.sharpe >= floor));
+    }
+
     return result;
-  }, [markets, greaterThan95, sportsOnly, endedOnly, lessThan30d, fivePlusTraders]);
+  }, [markets, greaterThan95, sportsOnly, endedOnly, lessThan30d, fivePlusTraders, scoreFloor, sharpeFloor]);
 
   return (
     <main className="page-shell">

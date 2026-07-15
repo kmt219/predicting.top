@@ -29,12 +29,14 @@ export function ProfileChart({
         <polyline fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="2" points={`20,${height - 30} ${width - 20},${height - 30}`} />
         <polyline fill="none" stroke="#2ee68b" strokeWidth="4" strokeLinejoin="round" strokeLinecap="round" points={points} />
       </svg>
-      <div className="chart-labels">
-        {data.map((point) => (
-          <span key={point.label} className="muted">
-            {point.label}
-          </span>
-        ))}
+      <div className="chart-labels" style={{ justifyContent: "space-between", flexWrap: "nowrap" }}>
+        {data.length > 0 && (
+          <>
+            <span className="muted">{data[0].label}</span>
+            <span className="muted">{data[Math.floor(data.length / 2)].label}</span>
+            <span className="muted">{data[data.length - 1].label}</span>
+          </>
+        )}
       </div>
     </div>
   );
