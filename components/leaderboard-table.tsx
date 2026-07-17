@@ -60,13 +60,20 @@ export function LeaderboardTable({
                       </Link>
                       <div className="social-badges-row">
                         {trader.xLinked && (
-                          <span className="x-badge" title="Linked X profile">
+                          <a
+                            href={`https://x.com/${trader.slug}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="x-badge"
+                            title="Linked X profile"
+                            style={{ display: "inline-flex", textDecoration: "none" }}
+                          >
                             <svg viewBox="0 0 24 24" className="x-logo-svg" style={{ width: 11, height: 11, fill: '#ffffff' }} aria-hidden="true">
                               <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
                             </svg>
-                          </span>
+                          </a>
                         )}
-                        <PlatformBadges platforms={trader.platforms} compact />
+                        <PlatformBadges platforms={trader.platforms} compact traderSlug={trader.slug} traderWallet={trader.wallet} />
                       </div>
                     </div>
                   </div>

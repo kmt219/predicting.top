@@ -50,20 +50,61 @@ export function platformLogo(platform: PlatformCode) {
 
 export function PlatformBadges({
   platforms,
-  compact = false
+  compact = false,
+  traderSlug,
+  traderWallet
 }: {
   platforms: PlatformCode[];
   compact?: boolean;
+  traderSlug?: string;
+  traderWallet?: string;
 }) {
+  const getPlatformUrl = (platform: PlatformCode) => {
+    if (platform === "PM") {
+      return traderWallet ? `https://polymarket.com/profile/${traderWallet}` : "https://polymarket.com";
+    }
+    if (platform === "KS") {
+      return traderSlug ? `https://kalshi.com/portfolio/${traderSlug}` : "https://kalshi.com";
+    }
+    if (platform === "OL") {
+      return traderWallet ? `https://opinionlabs.xyz/profile/${traderWallet}` : "https://opinionlabs.xyz";
+    }
+    return undefined;
+  };
+
   return (
     <div className="platform-badges">
-      {platforms.map((platform) => (
-        <span key={platform} className={cn("platform-badge", `platform-${platform.toLowerCase()}`, compact && "compact")}>
-          {platformLogo(platform)}
-          {!compact && <strong>{platform}</strong>}
-          {!compact ? <span>{labelMap[platform]}</span> : null}
-        </span>
-      ))}
+      {platforms.map((platform) => {
+        const url = getPlatformUrl(platform);
+        const badgeContent = (
+          <>
+            {platformLogo(platform)}
+            {!compact && <strong>{platform}</strong>}
+            {!compact ? <span>{labelMap[platform]}</span> : null}
+          </>
+        );
+
+        if (url) {
+          return (
+            <a
+              key={platform}
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={cn("platform-badge", `platform-${platform.toLowerCase()}`, compact && "compact")}
+              style={{ display: "inline-flex", textDecoration: "none", color: "inherit" }}
+            >
+              {badgeContent}
+            </a>
+          );
+        }
+
+        return (
+          <span key={platform} className={cn("platform-badge", `platform-${platform.toLowerCase()}`, compact && "compact")}>
+            {badgeContent}
+          </span>
+        );
+      })}
     </div>
   );
 }

@@ -63,7 +63,10 @@ select {
   font: inherit;
 }
 
+.font-sans {
   font-family: var(--font-sans);
+}
+
 button {
   cursor: pointer;
 }

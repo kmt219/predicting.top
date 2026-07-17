@@ -5,6 +5,8 @@ import { useEffect, useState } from "react";
 import { LeaderboardTable } from "@/components/leaderboard-table";
 import { RecentTradesTable, RecentTradesTableSkeleton } from "@/components/recent-trades";
 import { TrendingMarketsSection } from "@/components/trending-markets";
+import { platformLogo } from "@/components/platform-badges";
+import { SiteHeader } from "@/components/site-header";
 import { LeaderboardSortKey, PeriodKey, PlatformCode, TraderSummary, RecentTrade } from "@/lib/types";
 
 const periods: PeriodKey[] = ["ALL", "YTD", "1M", "1D"];
@@ -82,20 +84,6 @@ export default function HomePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [recentTrades, setRecentTrades] = useState<RecentTrade[]>([]);
   const [isTradesLoading, setIsTradesLoading] = useState(true);
-  const [theme, setTheme] = useState<"dark" | "light">("dark");
-
-  useEffect(() => {
-    const savedTheme = (localStorage.getItem("theme") as "dark" | "light") || "dark";
-    setTheme(savedTheme);
-    document.documentElement.setAttribute("data-theme", savedTheme);
-  }, []);
-
-  const toggleTheme = () => {
-    const nextTheme = theme === "dark" ? "light" : "dark";
-    setTheme(nextTheme);
-    localStorage.setItem("theme", nextTheme);
-    document.documentElement.setAttribute("data-theme", nextTheme);
-  };
 
   const formatAsOf = (asOfStr: string) => {
     if (!asOfStr) return "Jul 14, 12:48 PM";
@@ -142,6 +130,7 @@ export default function HomePage() {
 
   return (
     <main className="page-shell">
+      <SiteHeader active="leaderboard" />
       <section className="homepage-grid">
         <div className="hero-section" style={{ padding: "0 0 20px 0" }}>
           
@@ -177,52 +166,10 @@ export default function HomePage() {
                 opacity: 0.8,
                 margin: 0,
                 fontFamily: "Inter, var(--font-sans), sans-serif"
-              }}>P&L updated {formatAsOf(leaderboard.asOf)}</p>
+              }}>P&amp;L updated {formatAsOf(leaderboard.asOf)}</p>
             </div>
             
             <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 14, width: "auto" }}>
-              <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                <Link
-                  href="/positions"
-                  style={{
-                    padding: "7px 14px",
-                    borderRadius: "4px",
-                    color: "var(--text)",
-                    background: "transparent",
-                    border: "1px solid var(--border)",
-                    fontSize: "0.85rem",
-                    fontWeight: 500,
-                    fontFamily: "Inter, var(--font-sans), sans-serif",
-                    transition: "background-color 120ms ease, border-color 120ms ease"
-                  }}
-                >
-                  Positions
-                </Link>
-                <Link
-                  href="/#trending-markets"
-                  onClick={(e) => {
-                    const el = document.getElementById("trending-markets");
-                    if (el) {
-                      e.preventDefault();
-                      el.scrollIntoView({ behavior: "smooth" });
-                      window.history.pushState(null, "", "/#trending-markets");
-                    }
-                  }}
-                  style={{
-                    padding: "7px 14px",
-                    borderRadius: "4px",
-                    color: "var(--bg)",
-                    background: "var(--text)",
-                    fontSize: "0.85rem",
-                    fontWeight: 700,
-                    fontFamily: "Inter, var(--font-sans), sans-serif",
-                    transition: "opacity 120ms ease"
-                  }}
-                >
-                  Trending Markets
-                </Link>
-              </div>
-
               <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
                 <div style={{
                   fontSize: "1.25rem",
@@ -269,40 +216,6 @@ export default function HomePage() {
                 {leaderboard.items.length} of 217 traders
               </span>
             </div>
-            
-            <button
-              onClick={toggleTheme}
-              style={{
-                background: "none",
-                border: "none",
-                color: "var(--muted)",
-                cursor: "pointer",
-                padding: 6,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                transition: "color 120ms ease"
-              }}
-              aria-label="Toggle theme"
-            >
-              {theme === "dark" ? (
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>
-                </svg>
-              ) : (
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="4"/>
-                  <path d="M12 2v2"/>
-                  <path d="M12 20v2"/>
-                  <path d="M4.93 4.93l1.41 1.41"/>
-                  <path d="M17.66 17.66l1.41 1.41"/>
-                  <path d="M2 12h2"/>
-                  <path d="M20 12h2"/>
-                  <path d="M6.34 17.66l-1.41 1.41"/>
-                  <path d="M19.07 4.93l-1.41 1.41"/>
-                </svg>
-              )}
-            </button>
           </div>
 
           {/* Typography-compliant Filter row */}
@@ -417,13 +330,7 @@ export default function HomePage() {
                         gap: "6px"
                       }}
                     >
-                      <span className={`platform-filter-icon ${item.toLowerCase()}`} style={{
-                        width: 14,
-                        height: 14,
-                        borderRadius: "2px",
-                        display: "inline-block",
-                        backgroundColor: item === "PM" ? "#0c4ffb" : item === "KS" ? "#00b87c" : "#ff5a00"
-                      }} />
+                      {platformLogo(item)}
                       {item}
                     </button>
                   );
